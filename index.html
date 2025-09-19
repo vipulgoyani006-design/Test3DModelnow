@@ -15,7 +15,6 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
 
 <script>
-  // Scene, camera, renderer
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0xf0f0f0);
 
@@ -27,7 +26,6 @@
   // Lighting
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
   scene.add(ambientLight);
-
   const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
   directionalLight.position.set(10, 10, 10);
   scene.add(directionalLight);
@@ -37,60 +35,44 @@
   controls.enableDamping = true;
   controls.dampingFactor = 0.05;
 
-  // Load 3D model
+  // Load screw.gltf
   const loader = new THREE.GLTFLoader();
-  const modelFiles = ['screw.gltf', 'screw.glb']; // Try GLTF first, then GLB
+  loader.load('screw.gltf',
+    function(gltf){
+      const model = gltf.scene;
 
-  function loadModel(index=0) {
-    if(index >= modelFiles.length) {
-      console.error('No model could be loaded.');
-      return;
+      // Center and scale model
+      const box = new THREE.Box3().setFromObject(model);
+      const size = new THREE.Vector3();
+      box.getSize(size);
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const scaleFactor = 3 / maxDim;
+      model.scale.set(scaleFactor, scaleFactor, scaleFactor);
+
+      const center = new THREE.Vector3();
+      box.getCenter(center);
+      model.position.sub(center.multiplyScalar(scaleFactor));
+
+      scene.add(model);
+
+      // Camera position
+      camera.position.set(2, 2, 5);
+      controls.update();
+    },
+    undefined,
+    function(error){
+      console.error('Error loading model:', error);
+      alert('Failed to load screw.gltf. Make sure the file exists and matches the name exactly.');
     }
+  );
 
-    loader.load(
-      modelFiles[index],
-      function(gltf){
-        const model = gltf.scene;
-
-        // Compute bounding box for auto-scaling
-        const box = new THREE.Box3().setFromObject(model);
-        const size = new THREE.Vector3();
-        box.getSize(size);
-        const maxDim = Math.max(size.x, size.y, size.z);
-
-        const scaleFactor = 3 / maxDim; // scale to fit in camera view
-        model.scale.set(scaleFactor, scaleFactor, scaleFactor);
-
-        // Center model
-        const center = new THREE.Vector3();
-        box.getCenter(center);
-        model.position.sub(center.multiplyScalar(scaleFactor));
-
-        scene.add(model);
-
-        // Position camera for good view
-        camera.position.set(2, 2, 5);
-        controls.update();
-
-      },
-      undefined,
-      function(error){
-        console.warn('Failed to load', modelFiles[index], ', trying next if available.');
-        loadModel(index + 1); // Try next file
-      }
-    );
-  }
-
-  loadModel();
-
-  // Handle resize
+  // Resize handler
   window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
   });
 
-  // Animation loop
   function animate(){
       requestAnimationFrame(animate);
       controls.update();
