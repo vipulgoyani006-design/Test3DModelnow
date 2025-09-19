@@ -16,35 +16,52 @@
 <script>
   // Scene, camera, renderer
   const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xf0f0f0); // light gray background
+
   const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
   const renderer = new THREE.WebGLRenderer({antialias:true});
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
 
   // Lights
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.7); // soft white light
   scene.add(ambientLight);
-  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-  dirLight.position.set(10,10,10).normalize();
-  scene.add(dirLight);
+
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  directionalLight.position.set(5, 10, 7.5);
+  scene.add(directionalLight);
 
   // Controls
   const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.05;
 
-  // Load 3D screw
+  // Load 3D model
   const loader = new THREE.GLTFLoader();
-  const screwFile = 'screw.gltf'; // or 'screw.glb'
-  loader.load(screwFile, function(gltf){
-      scene.add(gltf.scene);
-      gltf.scene.rotation.x = Math.PI/2;  // rotate if needed
-  }, undefined, function(error){
+  const modelFile = 'screw.gltf'; // change to 'screw.glb' if needed
+
+  loader.load(modelFile,
+    function(gltf){
+      const model = gltf.scene;
+      // Scale and position model
+      model.scale.set(1.0, 1.0, 1.0);
+      model.position.set(0, 0, 0);
+      model.rotation.x = Math.PI / 2; // rotate if needed
+
+      scene.add(model);
+    },
+    undefined,
+    function(error){
       console.error('Error loading model:', error);
-  });
+      alert('Failed to load 3D model. Check console for details.');
+    }
+  );
 
-  // Camera
-  camera.position.z = 5;
+  // Camera position
+  camera.position.set(3, 3, 5);
+  controls.update();
 
-  // Responsive
+  // Handle window resize
   window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
