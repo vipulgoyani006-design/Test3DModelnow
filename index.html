@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>3D Screw Viewer</title>
+<style>body { margin:0; } canvas { width:100%; height:100% }</style>
+</head>
+<body>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/loaders/GLTFLoader.js"></script>
+
+<script>
+let scene = new THREE.Scene();
+let camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+let renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+// Light
+const light = new THREE.DirectionalLight(0xffffff, 1);
+light.position.set(10,10,10).normalize();
+scene.add(light);
+
+// Load screw
+const loader = new THREE.GLTFLoader();
+loader.load('screw.gltf', function(gltf){
+    scene.add(gltf.scene);
+    gltf.scene.rotation.x = Math.PI/2;
+});
+
+// Camera position
+camera.position.z = 5;
+
+// Controls (optional)
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+function animate(){
+    requestAnimationFrame(animate);
+    renderer.render(scene, camera);
+}
+animate();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
+</body>
+</html>
