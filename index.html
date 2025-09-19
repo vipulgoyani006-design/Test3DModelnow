@@ -9,6 +9,7 @@
 </style>
 </head>
 <body>
+
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
@@ -16,19 +17,19 @@
 <script>
   // Scene, camera, renderer
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xf0f0f0); // light gray background
+  scene.background = new THREE.Color(0xf0f0f0);
 
   const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
   const renderer = new THREE.WebGLRenderer({antialias:true});
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
 
-  // Lights
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.7); // soft white light
+  // Lighting
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
   scene.add(ambientLight);
 
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-  directionalLight.position.set(5, 10, 7.5);
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+  directionalLight.position.set(10, 10, 10);
   scene.add(directionalLight);
 
   // Controls
@@ -38,34 +39,55 @@
 
   // Load 3D model
   const loader = new THREE.GLTFLoader();
-  const modelFile = 'screw.gltf'; // change to 'screw.glb' if needed
+  const modelFiles = ['screw.gltf', 'screw.glb']; // Try GLTF first, then GLB
 
-  loader.load(modelFile,
-    function(gltf){
-      const model = gltf.scene;
-      // Scale and position model
-      model.scale.set(1.0, 1.0, 1.0);
-      model.position.set(0, 0, 0);
-      model.rotation.x = Math.PI / 2; // rotate if needed
-
-      scene.add(model);
-    },
-    undefined,
-    function(error){
-      console.error('Error loading model:', error);
-      alert('Failed to load 3D model. Check console for details.');
+  function loadModel(index=0) {
+    if(index >= modelFiles.length) {
+      console.error('No model could be loaded.');
+      return;
     }
-  );
 
-  // Camera position
-  camera.position.set(3, 3, 5);
-  controls.update();
+    loader.load(
+      modelFiles[index],
+      function(gltf){
+        const model = gltf.scene;
 
-  // Handle window resize
+        // Compute bounding box for auto-scaling
+        const box = new THREE.Box3().setFromObject(model);
+        const size = new THREE.Vector3();
+        box.getSize(size);
+        const maxDim = Math.max(size.x, size.y, size.z);
+
+        const scaleFactor = 3 / maxDim; // scale to fit in camera view
+        model.scale.set(scaleFactor, scaleFactor, scaleFactor);
+
+        // Center model
+        const center = new THREE.Vector3();
+        box.getCenter(center);
+        model.position.sub(center.multiplyScalar(scaleFactor));
+
+        scene.add(model);
+
+        // Position camera for good view
+        camera.position.set(2, 2, 5);
+        controls.update();
+
+      },
+      undefined,
+      function(error){
+        console.warn('Failed to load', modelFiles[index], ', trying next if available.');
+        loadModel(index + 1); // Try next file
+      }
+    );
+  }
+
+  loadModel();
+
+  // Handle resize
   window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
   });
 
   // Animation loop
